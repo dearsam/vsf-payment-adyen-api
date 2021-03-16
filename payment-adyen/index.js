@@ -280,7 +280,7 @@ module.exports = ({ config, db }) => {
       .methods(req.query.token ? req.query.token : null, req.params.cartId)
       .then(result => {
         const jsonRes = JSON.parse(result)
-        const paymentMethods = jsonRes && jsonRes.paymentMethodsResponse && jsonRes.paymentMethodsResponse.paymentMethods || []
+        const paymentMethods = (jsonRes && jsonRes.paymentMethodsResponse && jsonRes.paymentMethodsResponse.paymentMethods) || []
         apiStatus(res, paymentMethods, 200);
       })
       .catch(err => {
