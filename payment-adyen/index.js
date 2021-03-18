@@ -29,7 +29,7 @@ const getUserIp = (req) => {
   return req.headers['x-forwarded-for'] ||
     req.connection.remoteAddress ||
     req.socket.remoteAddress ||
-    (req.connection.socket ? req.connection.socket.remoteAddress : null);
+    (req.connection.socket ? req.connection.socket.remoteAddress : null)
 }
 
 const saveCache = (key, paymentData) => {
@@ -53,7 +53,7 @@ const generateSuccessKey = (userIp) => {
 }
 
 module.exports = ({ config, db }) => {
-  let mcApi = Router();
+  let mcApi = Router()
 
   // mcApi.post('/finalize-3ds1', (req, res) => {
 
@@ -243,20 +243,12 @@ module.exports = ({ config, db }) => {
   })
 
   mcApi.post('/methods/:storeCode/:cartId', (req, res) => {
+    const client = Magento2Client(multiStoreConfig(config.magento2.api, req))
 
-    const client = Magento2Client({
-      ...config.magento2.api,
-      url:
-        config.magento2.api.url.replace("/rest", "/") +
-        req.params.storeCode +
-        "/rest"
-    });
+    client.addMethods('adyen', (restClient) => {
+      var module = {}
 
-    client.addMethods("adyen", function(restClient) {
-      var module = {};
-
-      module.methods = async function(customerToken, cartId) {
-
+      module.methods = async function (customerToken, cartId) {
         if (customerToken && !isNaN(cartId)) {
           return restClient.post('/carts/mine/retrieve-adyen-payment-methods', {
             cart_id: cartId
@@ -426,34 +418,27 @@ module.exports = ({ config, db }) => {
       return apiStatus(res, 'orderId not provided', 500)
     }
 
-    const client = Magento2Client({
-      ...config.magento2.api,
-      url:
-        config.magento2.api.url.replace("/rest", "/") +
-        req.query.storeCode +
-        "/rest"
-    });
+    const client = Magento2Client(multiStoreConfig(config.magento2.api, req))
 
-    client.addMethods("adyen", function(restClient) {
-      var module = {};
+    client.addMethods('adyen', (restClient) => {
+      var module = {}
 
-      module.paymentStatus = async function() {
-
+      module.paymentStatus = async function () {
         return restClient.get(`/adyen/orders/${req.params.orderId}/payment-status`)
           .then(response => JSON.parse(response))
           .catch(err => { throw err })
-      };
-      return module;
-    });
+      }
+      return module
+    })
 
     client.adyen
       .paymentStatus()
       .then(result => {
-        apiStatus(res, result, 200);
+        apiStatus(res, result, 200)
       })
       .catch(err => {
-        apiStatus(res, err, 500);
-      });
+        apiStatus(res, err, 500)
+      })
   })
 
   mcApi.post('/payment/fingerprint/:storeCode/:quoteId', (req, res) => {
@@ -473,19 +458,12 @@ module.exports = ({ config, db }) => {
       return apiStatus(res, 'quoteId and token not provided', 500)
     }
 
-    const client = Magento2Client({
-      ...config.magento2.api,
-      url:
-        config.magento2.api.url.replace("/rest", "/") +
-        req.params.storeCode +
-        "/rest"
-    });
+    const client = Magento2Client(multiStoreConfig(config.magento2.api, req))
 
-    client.addMethods("adyen", function(restClient) {
-      var module = {};
+    client.addMethods('adyen', (restClient) => {
+      var module = {}
 
-      module.init = async function() {
-
+      module.init = async function () {
         let userId = null
         if (req.query.token) {
           try {
