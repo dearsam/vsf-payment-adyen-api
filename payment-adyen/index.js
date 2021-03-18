@@ -1,23 +1,23 @@
-import { apiStatus } from "../../../lib/util";
-import { Router } from "express";
+import { apiStatus } from '../../../lib/util'
+import { Router } from 'express'
 import { multiStoreConfig } from '../../../platform/magento2/util'
 import cache from '../../../lib/cache-instance'
-const {Client, Config, CheckoutAPI} = require('@adyen/api-library');
-const Magento2Client = require("magento2-rest-client").Magento2Client;
+const {Client, Config, CheckoutAPI} = require('@adyen/api-library')
+const Magento2Client = require('magento2-rest-client').Magento2Client
 const querystring = require('querystring')
 
-const crypto = require('crypto');
+const crypto = require('crypto')
 
-function generateToken({ stringBase = 'base64', byteLength = 48 } = {}) {
+function generateToken ({ stringBase = 'base64', byteLength = 48 } = {}) {
   return new Promise((resolve, reject) => {
     crypto.randomBytes(byteLength, (err, buffer) => {
       if (err) {
-        reject(err);
+        reject(err)
       } else {
-        resolve(buffer.toString(stringBase));
+        resolve(buffer.toString(stringBase))
       }
-    });
-  });
+    })
+  })
 }
 
 const pdKeyExpiryTime = 60 * 10 // 10 minutes
@@ -216,34 +216,33 @@ module.exports = ({ config, db }) => {
   //   });
   // })
 
-  mcApi.post("/vault", (req, res) => {
-
-    const client = Magento2Client(multiStoreConfig(config.magento2.api, req));
+  mcApi.post('/vault', (req, res) => {
+    const client = Magento2Client(multiStoreConfig(config.magento2.api, req))
 
     if (!req.query.token) {
-			return apiStatus(res, 'Token not provided', 500)
+      return apiStatus(res, 'Token not provided', 500)
     }
 
-    client.addMethods("adyen", function(restClient) {
-      var module = {};
+    client.addMethods('adyen', (restClient) => {
+      var module = {}
 
-      module.vault = function(customerToken) {
+      module.vault = function (customerToken) {
         return restClient.get('/mma/me/vault/items', customerToken)
-      };
-      return module;
-    });
+      }
+      return module
+    })
 
     client.adyen
       .vault(req.query.token)
       .then(result => {
-        apiStatus(res, result, 200);
+        apiStatus(res, result, 200)
       })
       .catch(err => {
-        apiStatus(res, err, 500);
-      });
-  });
+        apiStatus(res, err, 500)
+      })
+  })
 
-  mcApi.post("/methods/:storeCode/:cartId", (req, res) => {
+  mcApi.post('/methods/:storeCode/:cartId', (req, res) => {
 
     const client = Magento2Client({
       ...config.magento2.api,
@@ -267,26 +266,26 @@ module.exports = ({ config, db }) => {
             return restClient.post(`/guest-carts/${cartId}/retrieve-adyen-payment-methods`, {
               shippingAddress: req.body.shippingAddress,
               cartId
-            });
+            })
           }
-          return restClient.post(`/guest-carts/${cartId}/retrieve-adyen-payment-methods`);
+          return restClient.post(`/guest-carts/${cartId}/retrieve-adyen-payment-methods`)
         }
-      };
+      }
 
-      return module;
-    });
+      return module
+    })
 
     client.adyen
       .methods(req.query.token ? req.query.token : null, req.params.cartId)
       .then(result => {
         const jsonRes = JSON.parse(result)
         const paymentMethods = (jsonRes && jsonRes.paymentMethodsResponse && jsonRes.paymentMethodsResponse.paymentMethods) || []
-        apiStatus(res, paymentMethods, 200);
+        apiStatus(res, paymentMethods, 200)
       })
       .catch(err => {
-        apiStatus(res, err, 500);
-      });
-  });
+        apiStatus(res, err, 500)
+      })
+  })
 
   // mcApi.patch("/payment-information/:storeCode", (req, res) => {
 
@@ -418,13 +417,13 @@ module.exports = ({ config, db }) => {
   //     });
   // })
 
-  mcApi.get("/payment/status/:orderId", (req, res) => {
+  mcApi.get('/payment/status/:orderId', (req, res) => {
     if (!req.query.storeCode) {
-			return apiStatus(res, 'storeCode not provided', 500)
+      return apiStatus(res, 'storeCode not provided', 500)
     }
 
     if (!req.params.orderId) {
-			return apiStatus(res, 'orderId not provided', 500)
+      return apiStatus(res, 'orderId not provided', 500)
     }
 
     const client = Magento2Client({
@@ -457,21 +456,21 @@ module.exports = ({ config, db }) => {
       });
   })
 
-  mcApi.post("/payment/fingerprint/:storeCode/:quoteId", (req, res) => {
+  mcApi.post('/payment/fingerprint/:storeCode/:quoteId', (req, res) => {
     if (!req.params.storeCode) {
-			return apiStatus(res, 'storeCode not provided', 500)
+      return apiStatus(res, 'storeCode not provided', 500)
     }
 
     if (!req.body.fingerprint) {
-			return apiStatus(res, 'fingerprint not provided', 500)
+      return apiStatus(res, 'fingerprint not provided', 500)
     }
 
     if (!req.body.orderId) {
-			return apiStatus(res, 'orderId not provided', 500)
+      return apiStatus(res, 'orderId not provided', 500)
     }
 
     if (!req.params.quoteId) {
-			return apiStatus(res, 'quoteId and token not provided', 500)
+      return apiStatus(res, 'quoteId and token not provided', 500)
     }
 
     const client = Magento2Client({
@@ -504,29 +503,29 @@ module.exports = ({ config, db }) => {
             ...(userId ? {customer_id: userId} : {}),
             details: {
               ...(req.body.challenge
-                ? {"threeds2.challengeResult": req.body.fingerprint}
-                : {"threeds2.fingerprint": req.body.fingerprint}
+                ? {'threeds2.challengeResult': req.body.fingerprint}
+                : {'threeds2.fingerprint': req.body.fingerprint}
               )
             },
-            ...(req.body.noPaymentData ? {} : { paymentData: "" })
+            ...(req.body.noPaymentData ? {} : { paymentData: '' })
           })
         }, '', {
           'User-Agent': req.headers['user-agent']
         }).then(response => JSON.parse(response))
-        .catch(err => { throw err })
-      };
-      return module;
-    });
+          .catch(err => { throw err })
+      }
+      return module
+    })
 
     client.adyen
       .init()
       .then(result => {
-        apiStatus(res, result, 200);
+        apiStatus(res, result, 200)
       })
       .catch(err => {
-        apiStatus(res, err, 500);
-      });
+        apiStatus(res, err, 500)
+      })
   })
 
-  return mcApi;
+  return mcApi
 };
