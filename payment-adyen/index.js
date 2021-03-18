@@ -279,64 +279,65 @@ module.exports = ({ config, db }) => {
       })
   })
 
-  // mcApi.patch("/payment-information/:storeCode", (req, res) => {
+  mcApi.patch('/payment-information/:storeCode/:cartId', (req, res) => {
+    if (!req.params.storeCode) {
+      return apiStatus(res, 'storeCode not provided', 500)
+    }
 
-  //   if (!req.params.storeCode) {
-	// 		return apiStatus(res, 'storeCode not provided', 500)
-  //   }
+    if (!req.body.paymentMethod) {
+      return apiStatus(res, 'paymentMethod not provided', 500)
+    }
 
-  //   if (!req.body.paymentMethod) {
-	// 		return apiStatus(res, 'paymentMethod not provided', 500)
-  //   }
+    if (!req.body.additional_data) {
+      return apiStatus(res, 'additional_data not provided', 500)
+    }
 
-  //   if (!req.query.token) {
-	// 		return apiStatus(res, 'token not provided', 500)
-  //   }
+    const client = Magento2Client(multiStoreConfig(config.magento2.api, req))
 
-  //   const client = Magento2Client({
-  //     ...config.magento2.api,
-  //     url:
-  //       config.magento2.api.url.replace("/rest", "/") +
-  //       req.params.storeCode +
-  //       "/rest"
-  //   });
+    client.addMethods('adyen', (restClient) => {
+      var module = {}
 
-  //   client.addMethods("adyen", function(restClient) {
-  //     var module = {};
+      module.patchInformation = async function (customerToken, cartId) {
+        if (customerToken) {
+          return restClient.post('/carts/mine/set-payment-information', {
+            paymentMethod: req.body.paymentMethod
+          }, customerToken)
+        } else {
+          return restClient.post(`/guest-carts/${cartId}/set-payment-information`, {
+            paymentMethod: req.body.paymentMethod,
+            additional_data: req.body.additional_data,
+            billing_address: req.body.billingAddress
+          })
+        }
+      }
+      return module
+    })
 
-  //     module.patchInformation = async function(customerToken) {
-  //         return restClient.post('/carts/mine/set-payment-information', {
-  //           paymentMethod: req.body.paymentMethod
-  //         }, customerToken)
-  //     };
-  //     return module;
-  //   });
-
-  //   client.adyen
-  //     .patchInformation(req.query.token)
-  //     .then(result => {
-  //       apiStatus(res, result, 200);
-  //     })
-  //     .catch(err => {
-  //       apiStatus(res, err, 500);
-  //     });
-  // });
+    client.adyen
+      .patchInformation(req.query.token, req.params.cartId)
+      .then(result => {
+        apiStatus(res, result, 200)
+      })
+      .catch(err => {
+        apiStatus(res, err, 500)
+      })
+  })
 
   // mcApi.post("/payment/start/:storeCode/:quoteId", (req, res) => {
   //   if (!req.params.storeCode) {
-	// 		return apiStatus(res, 'storeCode not provided', 500)
+  // 		return apiStatus(res, 'storeCode not provided', 500)
   //   }
 
   //   if (!req.body.additional_data) {
-	// 		return apiStatus(res, 'additional_data not provided', 500)
+  // 		return apiStatus(res, 'additional_data not provided', 500)
   //   }
 
   //   if (!req.body.method) {
-	// 		return apiStatus(res, 'method not provided', 500)
+  // 		return apiStatus(res, 'method not provided', 500)
   //   }
 
   //   if (!req.params.quoteId) {
-	// 		return apiStatus(res, 'quoteId and token not provided', 500)
+  // 		return apiStatus(res, 'quoteId and token not provided', 500)
   //   }
 
   //   const client = Magento2Client({
