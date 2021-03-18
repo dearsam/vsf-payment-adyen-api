@@ -304,9 +304,11 @@ module.exports = ({ config, db }) => {
           }, customerToken)
         } else {
           return restClient.post(`/guest-carts/${cartId}/set-payment-information`, {
-            paymentMethod: req.body.paymentMethod,
-            additional_data: req.body.additional_data,
-            billing_address: req.body.billingAddress
+            email: req.body.email,
+            paymentMethod: {
+              method: req.body.paymentMethod,
+              additional_data: req.body.additional_data
+            }
           })
         }
       }
